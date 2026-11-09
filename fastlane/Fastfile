@@ -25,7 +25,7 @@ platform :ios do
       in_house: false
     )
 
-    # 3. Sertifikayı al / oluştur ve doğrudan oluşturduğumuz ci_keychain içine yükle
+    # 3. Sertifikayı al / oluştur ve ci_keychain içine yükle
     get_certificates(
       api_key: api_key,
       keychain_path: keychain_path,
@@ -33,12 +33,30 @@ platform :ios do
     )
 
     # 4. Provisioning Profile'ı Apple'dan indir
-    get_provisioning_profile(
+    profile_path = get_provisioning_profile(
       api_key: api_key,
       app_identifier: "com.fizyokantik.app"
     )
 
-    # 5. .ipa Paketini Derle
+    # 5. İndirilen Apple Profilinden Team ID'yi otomatik oku ve projeye bağla
+    profile_content = sh("security cms -D -i '#{profile_path}'")
+    team_id = profile_content[/<key>TeamIdentifier<\/key>\s*<array>\s*<string>([A-Z0-9]+)<\/string>/, 1]
+    UI.message("Apple Developer Team ID otomatik tespit edildi: #{team_id}")
+
+    update_project_team(
+      path: "FizyoKantik.xcodeproj",
+      teamid: team_id
+    )
+
+    update_code_signing_settings(
+      path: "FizyoKantik.xcodeproj",
+      use_automatic_signing: false,
+      team_id: team_id,
+      profile_name: lane_context[SharedValues::SIGH_NAME],
+      code_sign_identity: "Apple Distribution"
+    )
+
+    # 6. .ipa Paketini Derle
     build_app(
       project: "FizyoKantik.xcodeproj",
       scheme: "FizyoKantik",
@@ -47,7 +65,7 @@ platform :ios do
       output_name: "FizyoKantik.ipa"
     )
 
-    # 6. TestFlight'a Yükle
+    # 7. TestFlight'a Yükle
     upload_to_testflight(
       api_key: api_key,
       skip_waiting_for_build_processing: true
