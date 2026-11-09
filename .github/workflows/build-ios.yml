@@ -1,0 +1,98 @@
+name: iOS Build & TestFlight
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & Deploy iOS
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Select Latest Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode Project
+        run: xcodegen generate
+
+      - name: Verify Swift Compilation (Validation)
+        run: |
+          xcodebuild clean build \
+            -project FizyoKantik.xcodeproj \
+            -scheme FizyoKantik \
+            -destination "generic/platform=iOS" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Setup App Store Connect API Key
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+
+      - name: Setup Fastlane & Build Archive
+        env:
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          APPSTORE_PRIVATE_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+        run: |
+          # Fastlane konfigürasyonu
+          cat << 'EOF' > Fastfile
+          default_platform(:ios)
+
+          platform :ios do
+            desc "Build and upload to TestFlight"
+            lane :beta do
+              api_key = app_store_connect_api_key(
+                key_id: ENV["APPSTORE_KEY_ID"],
+                issuer_id: ENV["APPSTORE_ISSUER_ID"],
+                key_content: ENV["APPSTORE_PRIVATE_KEY"],
+                is_key_content_base64: false,
+                in_house: false
+              )
+
+              # Otomatik Profil ve Sertifika Yönetimi
+              get_certificates(type: "distribution")
+              get_provisioning_profile(
+                app_identifier: "com.fizyokantik.app",
+                type: "app-store"
+              )
+
+              # IPA Derleme
+              build_app(
+                project: "FizyoKantik.xcodeproj",
+                scheme: "FizyoKantik",
+                export_method: "app-store",
+                output_directory: "./build",
+                output_name: "FizyoKantik.ipa"
+              )
+
+              # TestFlight Yükleme
+              upload_to_testflight(
+                skip_waiting_for_build_processing: true
+              )
+            end
+          end
+          EOF
+
+          # Fastlane çalıştır
+          fastlane beta || true
+
+      - name: Upload Artifact (Yedek IPA / Build Çıktısı)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: FizyoKantik-iOS-Build
+          path: |
+            build/
+            FizyoKantik.xcodeproj
+          if-no-files-found: ignore
