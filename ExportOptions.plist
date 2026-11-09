@@ -3,13 +3,19 @@
 <plist version="1.0">
 <dict>
 	<key>method</key>
-	<string>app-store-connect</string>
+	<string>app-store</string>
+	<key>teamID</key>
+	<string>ZM6KU52XKM</string>
 	<key>signingStyle</key>
-	<string>automatic</string>
+	<string>manual</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.fizyokantik.app</key>
+		<string>com.fizyokantik.app AppStore</string>
+	</dict>
 	<key>stripSwiftSymbols</key>
 	<true/>
 	<key>uploadSymbols</key>
 	<true/>
 </dict>
 </plist>
-
