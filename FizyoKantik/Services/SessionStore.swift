@@ -65,12 +65,15 @@ class SessionStore: ObservableObject {
         yukleniyor = true
         hataMesaji = nil
 
-        async let ozetTask = try? SupabaseService.shared.getDashboardOzet()
-        async let randevularTask = try? SupabaseService.shared.getRandevular()
-        async let hastalarTask = try? SupabaseService.shared.getHastalar()
-        async let webRandevulariTask = try? SupabaseService.shared.getWebRandevulari()
+        async let ozetTask = SupabaseService.shared.getDashboardOzet()
+        async let randevularTask = SupabaseService.shared.getRandevular(tarih: nil)
+        async let hastalarTask = SupabaseService.shared.getHastalar(arama: nil)
+        async let webRandevulariTask = SupabaseService.shared.getWebRandevulari()
 
-        let (yeniOzet, yeniRandevular, yeniHastalar, yeniWeb) = await (ozetTask, randevularTask, hastalarTask, webRandevulariTask)
+        let yeniOzet = try? await ozetTask
+        let yeniRandevular = try? await randevularTask
+        let yeniHastalar = try? await hastalarTask
+        let yeniWeb = try? await webRandevulariTask
 
         if let o = yeniOzet { self.ozet = o }
         if let r = yeniRandevular { self.randevular = r }
