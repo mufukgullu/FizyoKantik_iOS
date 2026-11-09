@@ -40,7 +40,16 @@ platform :ios do
       app_identifier: "com.fizyokantik.app"
     )
 
-    # 5. .ipa Paketini Derle
+    # 5. Projeye Team ID ve İndirilen Profili Garanti Olarak Bağla
+    update_code_signing_settings(
+      path: "FizyoKantik.xcodeproj",
+      use_automatic_signing: false,
+      team_id: "ZM6KU52XKM",
+      profile_name: "com.fizyokantik.app AppStore",
+      code_sign_identity: "Apple Distribution"
+    )
+
+    # 6. .ipa Paketini Derle
     build_app(
       project: "FizyoKantik.xcodeproj",
       scheme: "FizyoKantik",
@@ -56,7 +65,7 @@ platform :ios do
       }
     )
 
-    # 6. TestFlight'a Yükle
+    # 7. TestFlight'a Yükle
     upload_to_testflight(
       api_key: api_key,
       skip_waiting_for_build_processing: true
