@@ -15,7 +15,7 @@ struct DashboardView: View {
             VStack(spacing: 0) {
                 // Üst Bar (Header)
                 HStack(spacing: 14) {
-                    Image("logo", bundle: nil)
+                    Image("ic_fizyokantik_logo")
                         .resizable()
                         .scaledToFit()
                         .frame(height: 32)

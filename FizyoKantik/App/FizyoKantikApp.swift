@@ -7,16 +7,18 @@ struct FizyoKantikApp: App {
 
     init() {
         // iOS TabBar & NavigationBar Dark Theme Configuration
+        let darkSurface = UIColor(red: 30/255.0, green: 41/255.0, blue: 59/255.0, alpha: 1.0)
+
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor(Color(hex: 0x1E293B)) // Theme.darkSurface
+        appearance.backgroundColor = darkSurface
 
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
 
         let navAppearance = UINavigationBarAppearance()
         navAppearance.configureWithOpaqueBackground()
-        navAppearance.backgroundColor = UIColor(Color(hex: 0x1E293B))
+        navAppearance.backgroundColor = darkSurface
         navAppearance.titleTextAttributes = [.foregroundColor: UIColor.white]
         navAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
 

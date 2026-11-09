@@ -21,7 +21,7 @@ struct LoginView: View {
 
             VStack(spacing: 24) {
                 // Logo & Emblem
-                Image("emblem", bundle: nil)
+                Image("ic_fizyokantik_emblem")
                     .resizable()
                     .scaledToFit()
                     .frame(width: 80, height: 80)
