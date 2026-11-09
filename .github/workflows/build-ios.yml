@@ -25,13 +25,14 @@ jobs:
 
       - name: Verify Swift Compilation (Validation)
         run: |
+          set -o pipefail
           xcodebuild clean build \
             -project FizyoKantik.xcodeproj \
             -scheme FizyoKantik \
             -destination "generic/platform=iOS Simulator" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY="" 2>&1 | tee build.log || (echo "=== DERLEME HATALARI ===" && grep -i -E "error:" build.log && exit 1)
 
       - name: Setup App Store Connect API Key
         run: |

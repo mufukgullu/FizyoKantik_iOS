@@ -20,6 +20,8 @@ targets:
     scheme: {}
     sources:
       - path: FizyoKantik
+        excludes:
+          - "Config/Info.plist"
     settings:
       base:
         PRODUCT_NAME: FizyoKantik
