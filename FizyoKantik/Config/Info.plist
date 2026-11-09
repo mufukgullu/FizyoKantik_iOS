@@ -54,6 +54,8 @@
 		<key>UIColorName</key>
 		<string></string>
 	</dict>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
 
