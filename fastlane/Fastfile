@@ -40,12 +40,16 @@ platform :ios do
       app_identifier: "com.fizyokantik.app"
     )
 
-    # 5. Projeye Team ID ve İndirilen Profili Garanti Olarak Bağla
+    # Apple'ın indirdiği profilin gerçek tam adını al (örn: 'com.fizyokantik.app AppStore 1794257556')
+    actual_profile_name = lane_context[SharedValues::SIGH_NAME]
+    UI.message("İndirilen resmi Apple profil adı: #{actual_profile_name}")
+
+    # 5. Projeye Team ID ve İndirilen Profili Birebir Bağla
     update_code_signing_settings(
       path: "FizyoKantik.xcodeproj",
       use_automatic_signing: false,
       team_id: "ZM6KU52XKM",
-      profile_name: "com.fizyokantik.app AppStore",
+      profile_name: actual_profile_name,
       code_sign_identity: "Apple Distribution"
     )
 
@@ -60,7 +64,7 @@ platform :ios do
         signingStyle: "manual",
         teamID: "ZM6KU52XKM",
         provisioningProfiles: {
-          "com.fizyokantik.app" => "com.fizyokantik.app AppStore"
+          "com.fizyokantik.app" => actual_profile_name
         }
       }
     )
