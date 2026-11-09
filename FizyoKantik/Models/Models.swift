@@ -100,3 +100,4 @@ struct HastaGecmisResponse: Codable {
     let seanslar: [Seans]?
     let odemeler: [Odeme]?
 }
+

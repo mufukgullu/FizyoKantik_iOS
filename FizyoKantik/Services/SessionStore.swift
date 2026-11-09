@@ -80,3 +80,4 @@ class SessionStore: ObservableObject {
         yukleniyor = false
     }
 }
+

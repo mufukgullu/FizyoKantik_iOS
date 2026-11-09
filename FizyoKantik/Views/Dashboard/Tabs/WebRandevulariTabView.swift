@@ -170,3 +170,4 @@ struct WebRandevulariTabView: View {
             .cornerRadius(8)
     }
 }
+

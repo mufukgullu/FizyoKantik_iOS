@@ -280,3 +280,4 @@ struct HizliSeansTabView: View {
         }
     }
 }
+

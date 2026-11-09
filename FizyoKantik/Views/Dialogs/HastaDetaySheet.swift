@@ -235,3 +235,4 @@ struct HastaDetaySheet: View {
         gecmisYukleniyor = false
     }
 }
+

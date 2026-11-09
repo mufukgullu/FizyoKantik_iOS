@@ -41,3 +41,4 @@ enum TcKimlikDogrulayici {
         return dogrula(tc).gecerliMi
     }
 }
+

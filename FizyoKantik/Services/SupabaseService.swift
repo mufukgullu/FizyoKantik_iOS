@@ -124,3 +124,4 @@ actor SupabaseService {
         return try await postRpc(fnName: "tablet_web_randevu_durum_guncelle", parameters: params)
     }
 }
+

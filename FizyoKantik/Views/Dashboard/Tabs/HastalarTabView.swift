@@ -160,3 +160,4 @@ struct HastalarTabView: View {
         .background(Theme.darkBg)
     }
 }
+

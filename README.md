@@ -16,3 +16,4 @@ FizyoKantik Klinik & Seans Yönetim Portalı resmi iOS ve iPadOS yerel (native) 
 5. **Hızlı Seans & Tahsilat:** Tek dokunuşla seans tamamlama ve borç/alacak güncelleme.
 6. **Web Randevu Talepleri:** Web sitesinden gelen başvuruları inceleme, arama, WhatsApp mesajı atma ve randevuya dönüştürme.
 7. **T.C. Kimlik Doğrulayıcı:** Resmi 11 haneli algoritma denetimi.
+

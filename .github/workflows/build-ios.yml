@@ -8,16 +8,14 @@ on:
 jobs:
   build:
     name: Build & Deploy iOS
-    runs-on: macos-14
+    runs-on: macos-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Select Latest Xcode
-        run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode.app
-          xcodebuild -version
+      - name: Show Xcode Version
+        run: xcodebuild -version
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -96,3 +94,4 @@ jobs:
             build/
             FizyoKantik.xcodeproj
           if-no-files-found: ignore
+
