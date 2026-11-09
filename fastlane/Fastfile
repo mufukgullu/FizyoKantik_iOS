@@ -1,0 +1,54 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Build FizyoKantik and upload directly to TestFlight"
+  lane :beta do
+    # 1. Apple App Store Connect API Yetkilendirmesi
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APPSTORE_KEY_ID"],
+      issuer_id: ENV["APPSTORE_ISSUER_ID"],
+      key_content: ENV["APPSTORE_PRIVATE_KEY"],
+      is_key_content_base64: false,
+      in_house: false
+    )
+
+    # 2. CI için geçici şifreli Keychain (Anahtarlık) oluştur
+    keychain_name = "ci_keychain"
+    keychain_password = "fizyokantik_ci_pass"
+    create_keychain(
+      name: keychain_name,
+      password: keychain_password,
+      default_keychain: true,
+      unlock: true,
+      timeout: 3600,
+      lock_when_sleeps: false
+    )
+
+    # 3. Sertifikayı Apple Developer hesabından al / oluştur ve Keychain'e yükle
+    get_certificates(
+      type: "distribution",
+      keychain_name: keychain_name,
+      keychain_password: keychain_password
+    )
+
+    # 4. Provisioning Profile'ı Apple'dan indir
+    get_provisioning_profile(
+      app_identifier: "com.fizyokantik.app",
+      type: "app-store"
+    )
+
+    # 5. .ipa Paketini Derle
+    build_app(
+      project: "FizyoKantik.xcodeproj",
+      scheme: "FizyoKantik",
+      export_method: "app-store",
+      output_directory: "./build",
+      output_name: "FizyoKantik.ipa"
+    )
+
+    # 6. TestFlight'a Yükle
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true
+    )
+  end
+end
