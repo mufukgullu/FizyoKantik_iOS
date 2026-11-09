@@ -3,8 +3,18 @@ default_platform(:ios)
 platform :ios do
   desc "Build FizyoKantik and upload directly to TestFlight"
   lane :beta do
-    # 1. CI ortamını (Keychain, yetkiler vb.) otomatik olarak ayarla
-    setup_ci
+    # 1. CI için şifresi bilinen özel Keychain (Anahtarlık) oluştur
+    keychain_name = "ci_keychain"
+    keychain_password = "fizyokantik_pass"
+    create_keychain(
+      name: keychain_name,
+      password: keychain_password,
+      default_keychain: true,
+      unlock: true,
+      timeout: 3600,
+      lock_when_sleeps: false
+    )
+    keychain_path = File.expand_path("~/Library/Keychains/#{keychain_name}-db")
 
     # 2. Apple App Store Connect API Yetkilendirmesi
     api_key = app_store_connect_api_key(
@@ -15,8 +25,12 @@ platform :ios do
       in_house: false
     )
 
-    # 3. Sertifikayı Apple Developer hesabından al / oluştur
-    get_certificates(api_key: api_key)
+    # 3. Sertifikayı al / oluştur ve doğrudan oluşturduğumuz ci_keychain içine yükle
+    get_certificates(
+      api_key: api_key,
+      keychain_path: keychain_path,
+      keychain_password: keychain_password
+    )
 
     # 4. Provisioning Profile'ı Apple'dan indir
     get_provisioning_profile(
