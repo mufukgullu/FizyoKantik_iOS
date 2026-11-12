@@ -10,6 +10,13 @@ struct HastaDetaySheet: View {
     @State private var gecmisYukleniyor: Bool = false
     @State private var secilenSegment: Int = 0
 
+    // Tahsilat Ekleme Sheet
+    @State private var tahsilatDialogGoster: Bool = false
+    @State private var tahsilatTutarText: String = ""
+    @State private var tahsilatAciklama: String = "Nakit Tahsilat"
+    @State private var tahsilatKaydediliyor: Bool = false
+    @State private var bildirimMesaji: String? = nil
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -75,6 +82,23 @@ struct HastaDetaySheet: View {
                                         .cornerRadius(10)
                                 }
                             }
+
+                            Button(action: {
+                                if hasta.bakiye > 0 {
+                                    tahsilatTutarText = "\(Int(hasta.bakiye))"
+                                } else {
+                                    tahsilatTutarText = "1000"
+                                }
+                                tahsilatDialogGoster = true
+                            }) {
+                                Label("Tahsilat Al", systemImage: "creditcard.fill")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .background(Theme.emeraldPrimary)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(10)
+                            }
                         }
 
                         // Metrikler
@@ -115,6 +139,20 @@ struct HastaDetaySheet: View {
                     .padding(20)
                     .background(Theme.darkSurface)
                     .cornerRadius(18)
+
+                    if let msg = bildirimMesaji {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(Theme.statusSuccess)
+                            Text(msg)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(Theme.statusSuccess)
+                            Spacer()
+                        }
+                        .padding(12)
+                        .background(Theme.statusSuccess.opacity(0.12))
+                        .cornerRadius(10)
+                    }
 
                     // Segmented Control
                     Picker("Geçmiş", selection: $secilenSegment) {
@@ -216,6 +254,39 @@ struct HastaDetaySheet: View {
                         .foregroundColor(Theme.emeraldLight)
                 }
             }
+            .sheet(isPresented: $tahsilatDialogGoster) {
+                NavigationStack {
+                    Form {
+                        Section(header: Text("Tahsilat Bilgisi").foregroundColor(Theme.emeraldLight)) {
+                            TextField("Ödenen Tutar (₺)", text: $tahsilatTutarText)
+                                .keyboardType(.numberPad)
+
+                            Picker("Ödeme Türü", selection: $tahsilatAciklama) {
+                                Text("Nakit").tag("Nakit Tahsilat")
+                                Text("Kredi Kartı / POS").tag("Kredi Kartı / POS")
+                                Text("Havale / EFT").tag("Havale / EFT")
+                            }
+                        }
+                    }
+                    .scrollContentBackground(.hidden)
+                    .background(Theme.darkBg)
+                    .navigationTitle("Tahsilat / Ödeme Al")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("İptal") { tahsilatDialogGoster = false }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Kaydet") {
+                                tahsilatKaydet()
+                            }
+                            .font(.headline)
+                            .foregroundColor(Theme.emeraldPrimary)
+                            .disabled(tahsilatKaydediliyor || (Double(tahsilatTutarText) ?? 0) <= 0)
+                        }
+                    }
+                }
+            }
             .task {
                 await gecmisiYukle()
             }
@@ -226,13 +297,37 @@ struct HastaDetaySheet: View {
         guard let id = hasta.id else { return }
         gecmisYukleniyor = true
         do {
-            let res = try await SupabaseService.shared.hastaGecmisGetir(hastaId: id)
-            self.seanslar = res.seanslar ?? []
-            self.odemeler = res.odemeler ?? []
-        } catch {
-            print("Geçmiş hatası: \(error)")
+            async let sTask = SupabaseService.shared.getSeanslar(hastaId: id)
+            async let oTask = SupabaseService.shared.getOdemeler(hastaId: id)
+            let sList = (try? await sTask) ?? []
+            let oList = (try? await oTask) ?? []
+            self.seanslar = sList
+            self.odemeler = oList
         }
         gecmisYukleniyor = false
     }
-}
 
+    private func tahsilatKaydet() {
+        guard let id = hasta.id, let tutar = Double(tahsilatTutarText), tutar > 0 else { return }
+        tahsilatKaydediliyor = true
+
+        Task {
+            do {
+                let res = try await SupabaseService.shared.odemeKaydet(
+                    hastaId: id,
+                    tutar: tutar,
+                    aciklama: tahsilatAciklama
+                )
+                if res.basarili {
+                    tahsilatDialogGoster = false
+                    bildirimMesaji = "₺\(String(format: "%.0f", tutar)) tahsilat başarıyla kaydedildi."
+                    await gecmisiYukle()
+                    await session.tumVerileriYukle()
+                }
+            } catch {
+                print("Tahsilat kaydetme hatası: \(error)")
+            }
+            tahsilatKaydediliyor = false
+        }
+    }
+}

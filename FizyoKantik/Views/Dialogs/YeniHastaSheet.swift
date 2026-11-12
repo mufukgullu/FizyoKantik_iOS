@@ -16,7 +16,7 @@ struct YeniHastaSheet: View {
     @State private var hataMesaji: String? = nil
 
     private var tcHataMesaji: String? {
-        if tcKimlik.isEmpty { return nil }
+        if tcKimlik.isEmpty { return "T.C. Kimlik Numarası zorunludur (11 hane)" }
         let sonuc = TcKimlikDogrulayici.dogrula(tcKimlik)
         return sonuc.gecerliMi ? nil : sonuc.hataMesaji
     }
@@ -25,7 +25,8 @@ struct YeniHastaSheet: View {
         !ad.trimmingCharacters(in: .whitespaces).isEmpty &&
         !soyad.trimmingCharacters(in: .whitespaces).isEmpty &&
         !telefon.trimmingCharacters(in: .whitespaces).isEmpty &&
-        (tcKimlik.isEmpty || TcKimlikDogrulayici.gecerliMi(tcKimlik))
+        tcKimlik.count == 11 &&
+        TcKimlikDogrulayici.gecerliMi(tcKimlik)
     }
 
     var body: some View {
@@ -33,7 +34,7 @@ struct YeniHastaSheet: View {
             Form {
                 Section(header: Text("Kişisel Bilgiler").foregroundColor(Theme.emeraldLight)) {
                     VStack(alignment: .leading, spacing: 4) {
-                        TextField("T.C. Kimlik Numarası", text: $tcKimlik)
+                        TextField("T.C. Kimlik Numarası (11 Hane)", text: $tcKimlik)
                             .keyboardType(.numberPad)
                         if let err = tcHataMesaji {
                             Text(err)
@@ -95,20 +96,21 @@ struct YeniHastaSheet: View {
 
         Task {
             do {
-                let sonuc = try await SupabaseService.shared.hastaEkle(
+                let sonuc = try await SupabaseService.shared.hastaKaydet(
                     tc: tcKimlik.trimmingCharacters(in: .whitespaces),
                     ad: ad.trimmingCharacters(in: .whitespaces),
                     soyad: soyad.trimmingCharacters(in: .whitespaces),
                     telefon: telefon.trimmingCharacters(in: .whitespaces),
                     tani: tani.isEmpty ? nil : tani,
-                    notlar: notlar.isEmpty ? nil : notlar
+                    notlar: notlar.isEmpty ? nil : notlar,
+                    cinsiyet: cinsiyet
                 )
 
                 if sonuc.basarili {
                     await session.tumVerileriYukle()
                     dismiss()
                 } else {
-                    hataMesaji = sonuc.mesaj ?? "Hasta kaydedilemedi."
+                    hataMesaji = sonuc.mesaj ?? "Hasta kaydı başarısız oldu."
                 }
             } catch {
                 hataMesaji = "Hata: \(error.localizedDescription)"
@@ -117,4 +119,3 @@ struct YeniHastaSheet: View {
         }
     }
 }
-

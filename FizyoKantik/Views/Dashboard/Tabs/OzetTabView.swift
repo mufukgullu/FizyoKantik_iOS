@@ -6,6 +6,43 @@ struct OzetTabView: View {
     @Binding var yeniRandevuGoster: Bool
     @Binding var yeniHastaGoster: Bool
 
+    private var yaklasanRandevular: [Randevu] {
+        let simdi = Date()
+        let cal = Calendar.current
+        let currentHour = cal.component(.hour, from: simdi)
+        let currentMinute = cal.component(.minute, from: simdi)
+        let currentTotalMinutes = currentHour * 60 + currentMinute
+
+        let bugununTarihiStr: String = {
+            let f = DateFormatter()
+            f.dateFormat = "yyyy-MM-dd"
+            return f.string(from: simdi)
+        }()
+
+        return session.randevular.filter { r in
+            // Tarih kontrolü (bugüne ait olmalı)
+            if !r.tarih.isEmpty && r.tarih != bugununTarihiStr {
+                return false
+            }
+
+            // Tamamlanmış veya iptal edilmiş randevuları yaklaşan listesinde gösterme
+            let d = r.durum.lowercased()
+            if d.contains("geldi") || d.contains("iptal") || d.contains("gelmedi") {
+                return false
+            }
+
+            // Saat kontrolü (saati geçen randevular gizlenir)
+            let parcalar = r.saat.split(separator: ":")
+            if parcalar.count == 2,
+               let h = Int(parcalar[0]),
+               let m = Int(parcalar[1]) {
+                let randevuMinutes = h * 60 + m
+                return randevuMinutes >= currentTotalMinutes
+            }
+            return true
+        }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -101,21 +138,35 @@ struct OzetTabView: View {
                     }
                 }
 
-                // Bugünkü Randevu Önizleme
-                Text("Günün Yaklaşan Randevuları")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(Theme.textPrimary)
-                    .padding(.top, 10)
+                // Günün Yaklaşan Randevuları
+                HStack {
+                    Text("Günün Yaklaşan Randevuları")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(Theme.textPrimary)
 
-                if session.randevular.isEmpty {
+                    Spacer()
+
+                    if !yaklasanRandevular.isEmpty {
+                        Text("\(yaklasanRandevular.count) Kalan")
+                            .font(.system(size: 12, weight: .bold))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Theme.cyanAccent.opacity(0.15))
+                            .foregroundColor(Theme.cyanAccent)
+                            .cornerRadius(8)
+                    }
+                }
+                .padding(.top, 10)
+
+                if yaklasanRandevular.isEmpty {
                     HStack {
                         Spacer()
                         VStack(spacing: 8) {
-                            Image(systemName: "calendar.badge.clock")
+                            Image(systemName: "checkmark.seal.fill")
                                 .font(.system(size: 32))
-                                .foregroundColor(Theme.textMuted)
-                            Text("Bugün için planlanmış randevu bulunmuyor.")
-                                .font(.system(size: 14))
+                                .foregroundColor(Theme.statusSuccess)
+                            Text("Günün sonraki saatleri için bekleyen randevu kalmadı.")
+                                .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(Theme.textSecondary)
                         }
                         .padding(32)
@@ -125,7 +176,7 @@ struct OzetTabView: View {
                     .cornerRadius(14)
                 } else {
                     VStack(spacing: 10) {
-                        ForEach(session.randevular.prefix(5)) { randevu in
+                        ForEach(yaklasanRandevular.prefix(6)) { randevu in
                             HStack {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(randevu.hasta_ad_soyad)
@@ -214,4 +265,3 @@ struct OzetTabView: View {
         }
     }
 }
-

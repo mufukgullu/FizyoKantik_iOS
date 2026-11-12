@@ -32,33 +32,6 @@ struct WebRandevuOnaylaSheet: View {
                     }
                 }
 
-                Section(header: Text("Hasta Dosyası Eşleştirme").foregroundColor(Theme.emeraldLight)) {
-                    if let mevcutHasta = session.hastalar.first(where: {
-                        $0.telefon.filter { $0.isNumber } == talep.telefon.filter { $0.isNumber } ||
-                        $0.ad_soyad.caseInsensitiveCompare(talep.ad_soyad) == .orderedSame
-                    }) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Mevcut Hasta Bulundu")
-                                    .font(.caption)
-                                    .foregroundColor(Theme.statusSuccess)
-                                Text(mevcutHasta.ad_soyad)
-                                    .font(.headline)
-                            }
-                            Spacer()
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(Theme.statusSuccess)
-                        }
-                        .onAppear {
-                            eslesenHastaId = mevcutHasta.id
-                        }
-                    } else {
-                        Text("Bu hasta için onay verildiğinde otomatik olarak yeni hasta kartı açılacaktır.")
-                            .font(.system(size: 13))
-                            .foregroundColor(Theme.cyanAccent)
-                    }
-                }
-
                 Section(header: Text("Randevu Planı").foregroundColor(Theme.emeraldLight)) {
                     DatePicker("Tarih", selection: $tarih, displayedComponents: [.date])
                         .environment(\.locale, Locale(identifier: "tr_TR"))
@@ -71,8 +44,6 @@ struct WebRandevuOnaylaSheet: View {
 
                     TextField("Seans Ücreti (₺)", text: $ucretText)
                         .keyboardType(.numberPad)
-
-                    TextField("Randevu Notu", text: $notlar)
                 }
 
                 if let hata = hataMesaji {
@@ -119,45 +90,20 @@ struct WebRandevuOnaylaSheet: View {
 
         Task {
             do {
-                var hastaId = eslesenHastaId
-
-                // Hasta yoksa yeni hasta oluştur
-                if hastaId == nil {
-                    let parts = talep.ad_soyad.split(separator: " ")
-                    let ad = parts.count > 1 ? parts.dropLast().joined(separator: " ") : String(parts.first ?? "")
-                    let soyad = parts.count > 1 ? String(parts.last ?? "") : ""
-
-                    let yeniHastaRes = try await SupabaseService.shared.hastaEkle(
-                        tc: talep.tc_kimlik_no ?? "",
-                        ad: ad,
-                        soyad: soyad,
-                        telefon: talep.telefon,
-                        tani: talep.sikayet,
-                        notlar: "Web sitesi randevu talebinden otomatik oluşturuldu."
-                    )
-                    hastaId = yeniHastaRes.id
-                }
-
-                guard let finalHastaId = hastaId else {
-                    hataMesaji = "Hasta dosyası oluşturulamadı."
-                    islemSuruyor = false
-                    return
-                }
-
-                // Randevu ekle
-                _ = try await SupabaseService.shared.randevuEkle(
-                    hastaId: finalHastaId,
+                let res = try await SupabaseService.shared.webRandevuOnayla(
+                    talepId: talep.id,
                     tarih: tarihStr,
                     saat: saat,
                     ucret: ucret,
-                    notlar: notlar.isEmpty ? (talep.sikayet ?? "Web randevusu") : notlar
+                    tani: talep.sikayet ?? ""
                 )
 
-                // Web talebi durumunu 'Onaylandı' yap
-                _ = try await SupabaseService.shared.webRandevuDurumGuncelle(id: talep.id, durum: "Onaylandı")
-
-                await session.tumVerileriYukle()
-                dismiss()
+                if res.basarili {
+                    await session.tumVerileriYukle()
+                    dismiss()
+                } else {
+                    hataMesaji = res.mesaj ?? "Web randevusu onaylanamadı."
+                }
             } catch {
                 hataMesaji = "Hata: \(error.localizedDescription)"
             }
@@ -165,4 +111,3 @@ struct WebRandevuOnaylaSheet: View {
         }
     }
 }
-

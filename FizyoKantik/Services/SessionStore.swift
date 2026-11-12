@@ -82,5 +82,47 @@ class SessionStore: ObservableObject {
 
         yukleniyor = false
     }
-}
 
+    func randevulariGetir(tarih: String? = nil) async {
+        do {
+            let r = try await SupabaseService.shared.getRandevular(tarih: tarih)
+            self.randevular = r
+        } catch {
+            print("Randevu getirme hatası: \(error)")
+        }
+    }
+
+    func randevuDurumGuncelle(id: Int, durum: String, aktifTarih: String? = nil) async -> Bool {
+        do {
+            let res = try await SupabaseService.shared.randevuDurumGuncelle(id: id, durum: durum)
+            if res.basarili {
+                await randevulariGetir(tarih: aktifTarih)
+                if let o = try? await SupabaseService.shared.getDashboardOzet() {
+                    self.ozet = o
+                }
+                return true
+            }
+            return false
+        } catch {
+            print("Randevu durum güncelleme hatası: \(error)")
+            return false
+        }
+    }
+
+    func randevuSil(id: Int, aktifTarih: String? = nil) async -> Bool {
+        do {
+            let res = try await SupabaseService.shared.randevuSil(id: id)
+            if res.basarili {
+                await randevulariGetir(tarih: aktifTarih)
+                if let o = try? await SupabaseService.shared.getDashboardOzet() {
+                    self.ozet = o
+                }
+                return true
+            }
+            return false
+        } catch {
+            print("Randevu silme hatası: \(error)")
+            return false
+        }
+    }
+}
